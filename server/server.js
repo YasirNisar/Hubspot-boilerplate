@@ -1,0 +1,38 @@
+
+require('dotenv').config();
+
+const express = require('express');
+const cors = require('cors');
+
+const app = express();
+const authRoutes = require('./routes/auth.routes');
+
+app.use(cors({
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    credentials: true
+}));
+
+app.use(express.json());
+app.use('/api/auth',authRoutes);
+
+app.get('/api/health', (req, res) => {
+    console.log('Health endpoint called');
+
+    res.status(200).json({
+        success: true,
+        message: 'HubSpot integration server is running!',
+        environment: process.env.NODE_ENV || 'development'
+    });
+});
+
+const PORT = process.env.PORT || 5001;
+
+const server = app.listen(PORT, () => {
+    console.log(`Server running at http://localhost:${PORT}`);
+});
+
+server.on('error', (error) => {
+    console.error('Server error:', error);
+});
+
+console.log('Express initialization completed');
