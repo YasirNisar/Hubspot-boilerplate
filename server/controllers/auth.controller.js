@@ -3,7 +3,12 @@ const crypto = require('crypto');
 const axios = require('axios');
 
 const { saveTokens } = require('../services/tokenStore');
+const {
+    refreshAccessToken,
+    disconnectHubSpot
+} = require('../services/token.service');
 
+const { getTokens } = require('../services/tokenStore');
 const TOKEN_URL = 'https://api.hubapi.com/oauth/2026-09/token';
 
 const cookieOptions = {
@@ -155,5 +160,53 @@ exports.hubSpotCallback = async (req, res) => {
         return res.redirect(
             `${process.env.FRONTEND_URL}/?hubspot=error`
         );
+    }
+};
+
+
+
+// Development-only: manually test token refresh
+exports.refreshForTesting = async (req, res) => {
+    if (process.env.NODE_ENV !== 'development') {
+        return res.status(404).json({
+            success: false,
+            message: 'Not found'
+        });
+    }
+
+    try {
+        await refreshAccessToken();
+
+        return res.json({
+            success: true,
+            message: 'Access token refreshed successfully',
+            expiresAt: getTokens().expires_at
+        });
+
+    } catch (error) {
+        return res.status(400).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
+
+// Disconnect HubSpot
+exports.disconnect = async (req, res) => {
+    try {
+        await disconnectHubSpot();
+
+        return res.json({
+            success: true,
+            message: 'HubSpot disconnected successfully'
+        });
+
+    } catch (error) {
+        console.error('Disconnect failed:', error.message);
+
+        return res.status(502).json({
+            success: false,
+            message: 'Unable to revoke HubSpot authorization'
+        });
     }
 };

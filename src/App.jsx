@@ -7,10 +7,12 @@ function App() {
     const [connection, setConnection] = useState({
         loading: true,
         connected: false,
-        hubId: null
+        hubId: null,
+        expiresAt: null
     });
 
     const [message, setMessage] = useState('');
+    const [processing, setProcessing] = useState(false);
 
     const checkConnection = async () => {
         try {
@@ -24,7 +26,8 @@ function App() {
             setConnection({
                 loading: false,
                 connected: data.connected,
-                hubId: data.hubId
+                hubId: data.hubId,
+                expiresAt: data.expiresAt
             });
         } catch (error) {
             console.error(error);
@@ -32,7 +35,8 @@ function App() {
             setConnection({
                 loading: false,
                 connected: false,
-                hubId: null
+                hubId: null,
+                expiresAt: null
             });
         }
     };
@@ -50,7 +54,6 @@ function App() {
 
         checkConnection();
 
-        // Remove OAuth query parameters
         if (params.has('hubspot')) {
             window.history.replaceState(
                 {},
@@ -61,9 +64,65 @@ function App() {
     }, []);
 
     const connectHubSpot = () => {
-        window.location.assign(
-            `${API_URL}/auth/hubspot`
-        );
+        window.location.assign(`${API_URL}/auth/hubspot`);
+    };
+
+    const refreshToken = async () => {
+        setProcessing(true);
+        setMessage('');
+
+        try {
+            const response = await fetch(
+                `${API_URL}/auth/refresh`,
+                {
+                    method: 'POST',
+                    credentials: 'include'
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setMessage(data.message);
+            await checkConnection();
+
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setProcessing(false);
+        }
+    };
+
+    const disconnectHubSpot = async () => {
+        setProcessing(true);
+        setMessage('');
+
+        try {
+            const response = await fetch(
+                `${API_URL}/auth/disconnect`,
+                {
+                    method: 'POST',
+                    credentials: 'include'
+                }
+            );
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message);
+            }
+
+            setMessage(data.message);
+            await checkConnection();
+
+        } catch (error) {
+            setMessage(error.message);
+        } finally {
+            setProcessing(false);
+        }
     };
 
     return (
@@ -83,6 +142,31 @@ function App() {
                     </p>
 
                     <p>Hub ID: {connection.hubId}</p>
+
+                    <p>
+                        Token expires:{' '}
+                        {connection.expiresAt
+                            ? new Date(
+                                connection.expiresAt
+                            ).toLocaleString()
+                            : 'Unknown'}
+                    </p>
+
+                    <button
+                        onClick={refreshToken}
+                        disabled={processing}
+                    >
+                        Refresh Access Token
+                    </button>
+
+                    {' '}
+
+                    <button
+                        onClick={disconnectHubSpot}
+                        disabled={processing}
+                    >
+                        Disconnect HubSpot
+                    </button>
                 </div>
             ) : (
                 <button onClick={connectHubSpot}>
