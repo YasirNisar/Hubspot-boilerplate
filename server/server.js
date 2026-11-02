@@ -6,6 +6,7 @@ const cors = require('cors');
 
 const app = express();
 const authRoutes = require('./routes/auth.routes');
+const contactRoutes = require('./routes/contact.routes');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -14,6 +15,7 @@ app.use(cors({
 
 app.use(express.json());
 app.use('/api/auth',authRoutes);
+app.use('/api/contacts', contactRoutes);
 
 app.get('/api/health', (req, res) => {
     console.log('Health endpoint called');
