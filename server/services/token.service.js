@@ -15,9 +15,8 @@ const REVOKE_URL =
 
 let refreshPromise = null;
 
-// Refresh access token
 async function performRefresh() {
-    const tokens = getTokens();
+    const tokens = await getTokens();
 
     if (!tokens?.refresh_token) {
         throw new Error('Refresh token is not available');
@@ -42,7 +41,7 @@ async function performRefresh() {
             }
         );
 
-        saveTokens(response.data);
+        await saveTokens(response.data);
 
         console.log('HubSpot access token refreshed');
 
@@ -58,13 +57,12 @@ async function performRefresh() {
             description: error.response?.data?.error_description
         });
 
-        // Invalid/revoked refresh token requires reauthorization.
         if (
             oauthError === 'invalid_grant' ||
             status === 401 ||
             status === 403
         ) {
-            clearTokens();
+            await clearTokens();
         }
 
         throw new Error(
@@ -75,7 +73,6 @@ async function performRefresh() {
     }
 }
 
-// Prevent multiple simultaneous refresh requests.
 function refreshAccessToken() {
     if (!refreshPromise) {
         refreshPromise = performRefresh().finally(() => {
@@ -86,10 +83,8 @@ function refreshAccessToken() {
     return refreshPromise;
 }
 
-// Return a valid access token.
-// Refresh 60 seconds before expiration.
 async function getValidAccessToken() {
-    const tokens = getTokens();
+    const tokens = await getTokens();
 
     if (!tokens?.access_token) {
         throw new Error('HubSpot is not connected');
@@ -105,9 +100,8 @@ async function getValidAccessToken() {
     return tokens.access_token;
 }
 
-// Revoke HubSpot authorization and disconnect.
 async function disconnectHubSpot() {
-    const tokens = getTokens();
+    const tokens = await getTokens();
 
     if (!tokens) {
         return;
@@ -131,7 +125,7 @@ async function disconnectHubSpot() {
         }
     );
 
-    clearTokens();
+    await clearTokens();
 
     console.log('HubSpot disconnected and refresh token revoked');
 }

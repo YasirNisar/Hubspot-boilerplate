@@ -142,7 +142,7 @@ exports.hubSpotCallback = async (req, res) => {
         );
 
         // Store tokens on backend
-        saveTokens(response.data);
+        await saveTokens(response.data);
 
         console.log('HubSpot OAuth successful');
         console.log('Connected Hub ID:', response.data.hub_id);
@@ -180,7 +180,7 @@ exports.refreshForTesting = async (req, res) => {
         return res.json({
             success: true,
             message: 'Access token refreshed successfully',
-            expiresAt: getTokens().expires_at
+            expiresAt: await getTokens().expires_at
         });
 
     } catch (error) {
