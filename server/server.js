@@ -8,11 +8,14 @@ const app = express();
 const authRoutes = require('./routes/auth.routes');
 const contactRoutes = require('./routes/contact.routes');
 const jobRoutes = require('./routes/job.routes');
+const webhookRoutes = require('./routes/webhook.routes');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true
 }));
+
+app.use('/api/webhooks', webhookRoutes);
 
 app.use(express.json());
 app.use('/api/auth',authRoutes);
