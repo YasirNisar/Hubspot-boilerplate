@@ -66,10 +66,7 @@ async function performRefresh() {
         }
 
         throw new Error(
-            oauthError === 'invalid_grant'
-                ? 'HubSpot authorization expired. Please reconnect.'
-                : 'Unable to refresh HubSpot access token'
-        );
+            oauthError === 'invalid_grant'?'HubSpot authorization expired. Please reconnect.':'Unable to refresh HubSpot access token');
     }
 }
 

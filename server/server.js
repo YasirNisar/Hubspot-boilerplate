@@ -9,6 +9,8 @@ const authRoutes = require('./routes/auth.routes');
 const contactRoutes = require('./routes/contact.routes');
 const jobRoutes = require('./routes/job.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const { apiLimiter } =
+    require('./middleware/rateLimit.middleware');
 
 app.use(cors({
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
@@ -18,9 +20,9 @@ app.use(cors({
 app.use('/api/webhooks', webhookRoutes);
 
 app.use(express.json());
-app.use('/api/auth',authRoutes);
-app.use('/api/contacts', contactRoutes);
-app.use('/api/jobs', jobRoutes);
+app.use('/api/auth',apiLimiter,authRoutes);
+app.use('/api/contacts',apiLimiter, contactRoutes);
+app.use('/api/jobs',apiLimiter, jobRoutes);
 
 app.get('/api/health', (req, res) => {
     console.log('Health endpoint called');
