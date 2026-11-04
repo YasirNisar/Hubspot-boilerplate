@@ -17,7 +17,8 @@
     "dotenv": "^16.4.7",
     "express": "^5.1.0",
     "express-rate-limit": "^8.7.3",
-    "ioredis": "^6.0.0"
+    "ioredis": "^6.0.0",
+    "mongoose": "^9.11.4"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

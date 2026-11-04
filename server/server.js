@@ -5,10 +5,12 @@ const express = require('express');
 const cors = require('cors');
 
 const app = express();
+const connectDatabase = require('./config/database');
 const authRoutes = require('./routes/auth.routes');
 const contactRoutes = require('./routes/contact.routes');
 const jobRoutes = require('./routes/job.routes');
 const webhookRoutes = require('./routes/webhook.routes');
+const mongoContactRoutes = require('./routes/mongo-contact.routes');
 const { apiLimiter } =
     require('./middleware/rateLimit.middleware');
 
@@ -23,6 +25,7 @@ app.use(express.json());
 app.use('/api/auth',apiLimiter,authRoutes);
 app.use('/api/contacts',apiLimiter, contactRoutes);
 app.use('/api/jobs',apiLimiter, jobRoutes);
+app.use('/api/mongo/contacts', apiLimiter, mongoContactRoutes);
 
 app.get('/api/health', (req, res) => {
     console.log('Health endpoint called');
@@ -36,12 +39,19 @@ app.get('/api/health', (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 
-const server = app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-});
+async function startServer() {
+    try {
+        await connectDatabase();
 
-server.on('error', (error) => {
-    console.error('Server error:', error);
-});
+        app.listen(PORT, () => {
+            console.log(`Server running at http://localhost:${PORT}`);
+        });
+    } catch (error) {
+        console.error('Server startup failed:', error.message);
+        process.exit(1);
+    }
+}
+
+startServer();
 
 console.log('Express initialization completed');
