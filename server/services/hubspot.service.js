@@ -1,14 +1,44 @@
 
 const axios = require('axios');
 
-const { getValidAccessToken } = require('./token.service');
+const { getValidAccessToken,refreshAccessToken } = require('./token.service');
 
 const HUBSPOT_API_URL = 'https://api.hubapi.com';
 const CONTACTS_ENDPOINT =
     '/crm/objects/2026-09/contacts';
 
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(error, attempt) {
+    const retryAfter = error.response?.headers?.['retry-after'];
+
+    if (retryAfter) {
+        const seconds = Number(retryAfter);
+
+        if (Number.isFinite(seconds) && seconds >= 0) {
+            return Math.min(seconds * 1000, 30000);
+        }
+
+        const retryDate = Date.parse(retryAfter);
+
+        if (!Number.isNaN(retryDate)) {
+            return Math.min(
+                Math.max(retryDate - Date.now(), 0),
+                30000
+            );
+        }
+    }
+
+    return Math.min(1000 * (2 ** attempt), 30000);
+}
+
+
 // Reusable authenticated request
-async function hubspotRequest(config, retry = true) {
+
+async function hubspotRequest(config, retryAuth = true, retry429 = 2) {
     const accessToken = await getValidAccessToken();
 
     try {
@@ -23,14 +53,29 @@ async function hubspotRequest(config, retry = true) {
             timeout: 15000
         });
     } catch (error) {
-        // If token was rejected, refresh once and retry.
-        if (error.response?.status === 401 && retry) {
-            const { refreshAccessToken } =
-                require('./token.service');
-
+        // Refresh once if HubSpot rejects the access token.
+        if (error.response?.status === 401 && retryAuth) {
             await refreshAccessToken();
 
-            return hubspotRequest(config, false);
+            return hubspotRequest(config, false, retry429);
+        }
+
+        // Respect Retry-After when HubSpot rate-limits us.
+        if (error.response?.status === 429 && retry429 > 0) {
+            const attempt = 2 - retry429;
+            const delay = getRetryDelay(error, attempt);
+
+            console.warn(
+                `HubSpot rate limit reached. Retrying in ${delay}ms.`
+            );
+
+            await sleep(delay);
+
+            return hubspotRequest(
+                config,
+                retryAuth,
+                retry429 - 1
+            );
         }
 
         throw error;
